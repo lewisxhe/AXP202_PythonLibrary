@@ -43,7 +43,7 @@ default_chip_type = AXP202_CHIP_ID
 class PMU(object):
     def __init__(self, scl=None, sda=None,
                  intr=None, address=None):
-
+        self.device = None
         self.scl = scl if scl is not None else default_pin_scl
         self.sda = sda if sda is not None else default_pin_sda
         self.intr = intr if intr is not None else default_pin_intr
@@ -90,10 +90,11 @@ class PMU(object):
         print('* initializing mpu')
         self.chip = self.read_byte(AXP202_IC_TYPE)
         if(self.chip == AXP202_CHIP_ID):
+            self.chip = AXP202_CHIP_ID
             print("Detect PMU Type is AXP202")
         elif(self.chip == AXP192_CHIP_ID):
             print("Detect PMU Type is AXP192")
-            raise Exception("No Support AXP192!")
+            self.chip = AXP192_CHIP_ID
         else:
             raise Exception("Invalid Chip ID!")
 
@@ -323,19 +324,32 @@ class PMU(object):
         prev = self.read_byte(AXP202_LDO24OUT_VOL)
         prev &= 0x0F
         prev = prev | (int(val) << 4)
-        self.write_byte(AXP202_LDO24OUT_VOL, (prev))
+        self.write_byte(AXP202_LDO24OUT_VOL, int(prev))
 
     def setLDO3Voltage(self, mv):
-        if(mv < 700):
+        if self.chip == AXP202_CHIP_ID and mv < 700:
             mv = 700
-        elif(mv > 2275):
-            mv = 2275
-        val = (mv - 700) / 25
-        prev = self.read_byte(AXP202_LDO3OUT_VOL)
-        prev &= 0x80
-        prev = prev | int(val)
-        self.write_byte(AXP202_LDO3OUT_VOL, (prev))
-        self.write_byte(AXP202_LDO3OUT_VOL, int(val))
+        elif self.chip == AXP192_CHIP_ID and mv < 1800:
+            mv = 1800
+
+        if self.chip == AXP202_CHIP_ID and mv > 3500:
+            mv = 3500
+        elif self.chip == AXP192_CHIP_ID and mv > 3300:
+            mv = 3300
+        
+        if self.chip == AXP202_CHIP_ID:
+            val = (mv - 700) / 25
+            prev = self.read_byte(AXP202_LDO3OUT_VOL)
+            prev &= 0x80
+            prev = prev | int(val)
+            self.write_byte(AXP202_LDO3OUT_VOL, int(prev))
+            # self.write_byte(AXP202_LDO3OUT_VOL, int(val))
+        elif self.chip == AXP192_CHIP_ID:
+            val = (mv - 1800) / 100
+            prev = self.read_byte(AXP192_LDO23OUT_VOL)
+            prev &= 0xF0
+            prev = prev | int(val)
+            self.write_byte(AXP192_LDO23OUT_VOL, int(prev))
         
     def setLDO4Voltage(self, arg):
         data = self.read_byte(AXP202_LDO24OUT_VOL)
