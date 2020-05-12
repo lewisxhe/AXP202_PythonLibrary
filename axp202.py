@@ -455,6 +455,11 @@ class PMU(object):
         if(mask):
             return 0
         return data & (~self.__BIT_MASK(7))
+    
+    def setChgLEDChgControl(self):
+        data = self.read_byte(AXP202_OFF_CTL)
+        data = data & 0b111110111
+        self.write_byte(AXP202_OFF_CTL, data)
 
     def setChgLEDMode(self, mode):
         data = self.read_byte(AXP202_OFF_CTL)
