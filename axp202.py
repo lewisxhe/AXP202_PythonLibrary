@@ -302,8 +302,8 @@ class PMU(object):
     def setDC2Voltage(self, mv):
         if(mv < 700):
             mv = 700
-        elif(mv > 3500):
-            mv = 3500
+        elif(mv > 2275):
+            mv = 2275
         val = (mv - 700) / 25
         self.write_byte(AXP202_DC2OUT_VOL, int(val))
 
@@ -336,7 +336,7 @@ class PMU(object):
             mv = 3500
         elif self.chip == AXP192_CHIP_ID and mv > 3300:
             mv = 3300
-        
+
         if self.chip == AXP202_CHIP_ID:
             val = (mv - 700) / 25
             prev = self.read_byte(AXP202_LDO3OUT_VOL)
@@ -350,12 +350,13 @@ class PMU(object):
             prev &= 0xF0
             prev = prev | int(val)
             self.write_byte(AXP192_LDO23OUT_VOL, int(prev))
-        
+
     def setLDO4Voltage(self, arg):
-        data = self.read_byte(AXP202_LDO24OUT_VOL)
-        data = data & 0xF0
-        data = data | arg
-        self.write_byte(AXP202_LDO24OUT_VOL, data)
+        if self.chip == AXP202_CHIP_ID and arg <= AXP202_LDO4_3300MV:
+            data = self.read_byte(AXP202_LDO24OUT_VOL)
+            data = data & 0xF0
+            data = data | arg
+            self.write_byte(AXP202_LDO24OUT_VOL, data)
 
     def setLDO3Mode(self, mode):
         if(mode > AXP202_LDO3_DCIN_MODE):
@@ -455,7 +456,7 @@ class PMU(object):
         if(mask):
             return 0
         return data & (~self.__BIT_MASK(7))
-    
+
     def setChgLEDChgControl(self):
         data = self.read_byte(AXP202_OFF_CTL)
         data = data & 0b111110111
